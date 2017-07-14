@@ -57,7 +57,7 @@ import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 
-public class JdbcDBInputFormat<T extends DBWritable> 
+public class JdbcDBInputFormat<T extends DBWritable>
    extends DBInputFormat {
     private static final Log LOG = LogFactory.getLog(JdbcDBInputFormat.class);
     private String conditions;
@@ -69,10 +69,17 @@ public class JdbcDBInputFormat<T extends DBWritable>
     private String[] fieldNames;
 
     private DBConfiguration dbConf;
-    
+
     public JdbcDBInputFormat(){
-    
+
     }
+
+    @Override
+    public void setConf(Configuration conf) {
+        super.closeConnection();
+        super.setConf(conf);
+    }
+
     public void setConfLocal(){
 
         dbConf = super.getDBConf();
@@ -87,10 +94,10 @@ public class JdbcDBInputFormat<T extends DBWritable>
           throw new RuntimeException(ex);
        }
     }
-    
+
     @Override
     public RecordReader<LongWritable, T> createRecordReader(InputSplit split,
-      TaskAttemptContext context) throws IOException, InterruptedException {  
+      TaskAttemptContext context) throws IOException, InterruptedException {
         setConfLocal();
         Class<T> inputClass = (Class<T>) (dbConf.getInputClass());
         try{
@@ -98,11 +105,11 @@ public class JdbcDBInputFormat<T extends DBWritable>
             String dbProductName = super.getDBProductName().toUpperCase();
             Configuration conf = dbConf.getConf();
             if (dbProductName.startsWith("MICROSOFT SQL SERVER")) {
-                
+
                 return new MicrosoftDBRecordReader<T>((DBInputFormat.DBInputSplit)split, inputClass,
                 dbConf.getConf(), connection, super.getDBConf(), conditions, fieldNames,
                 tableName);
-            
+
             } else if (dbProductName.startsWith("ORACLE")) {
                 // use Oracle-specific db reader.
                 return new OracleDBRecordReader<T>((DBInputFormat.DBInputSplit) split, inputClass,
